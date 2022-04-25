@@ -1,5 +1,5 @@
 output/
 logs/
+FaceBoxes/
 __pycache__
 *.pth
-FaceBoxes/
