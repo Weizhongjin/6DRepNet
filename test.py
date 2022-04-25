@@ -1,4 +1,4 @@
-from model import SixDRepNet
+from src.model import SixDRepNet
 import math
 import re
 from matplotlib import pyplot as plt
@@ -18,8 +18,8 @@ from torchvision import transforms
 import torch.backends.cudnn as cudnn
 import torchvision
 import torch.nn.functional as F
-import datasets
-import utils
+import src.datasets_ori as datasets
+import src.utils as utils
 import matplotlib
 matplotlib.use('TkAgg')
 

@@ -1,0 +1,12 @@
+batch_size : 54
+snapshot : ''
+DATA:
+  type : 
+    - 'Pose_300W_LP'
+    - 'easy'
+  data_dir :
+    - '/home/weizhonj/data/ori_data/300W_LP'
+    - '/home/weizhonj/data/ori_data/20220415'
+  filename_list:
+    - '/home/weizhonj/data/ori_data/300W_LP/files.txt'
+    - '/home/weizhonj/data/ori_data/20220415/pose_0415_bbox.csv'

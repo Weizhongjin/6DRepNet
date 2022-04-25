@@ -9,51 +9,13 @@ import torch
 from torchvision import transforms
 import torch.backends.cudnn as cudnn
 
-from model import SixDRepNet, SixDRepNet2
-import datasets
-from loss import GeodesicLoss
+from src.model import SixDRepNet, SixDRepNet2
+import src.datasets as datasets
+from src.loss import GeodesicLoss
 
 import torch.utils.model_zoo as model_zoo
 import torchvision
-
-
-def parse_args():
-    """Parse input arguments."""
-    parser = argparse.ArgumentParser(
-        description='Head pose estimation using the 6DRepNet.')
-    parser.add_argument(
-        '--gpu', dest='gpu_id', help='GPU device id to use [0]',
-        default=0, type=int)
-    parser.add_argument(
-        '--num_epochs', dest='num_epochs',
-        help='Maximum number of training epochs.',
-        default=30, type=int)
-    parser.add_argument(
-        '--batch_size', dest='batch_size', help='Batch size.',
-        default=64, type=int)
-    parser.add_argument(
-        '--lr', dest='lr', help='Base learning rate.',
-        default=0.00001, type=float)
-    parser.add_argument(
-        '--dataset', dest='dataset', help='Dataset type.',
-        default='Pose_300W_LP', type=str) #Pose_300W_LP
-    parser.add_argument(
-        '--data_dir', dest='data_dir', help='Directory path for data.',
-        default='/datasets/300W_LP', type=str)#BIWI_70_30_train.npz
-    parser.add_argument(
-        '--filename_list', dest='filename_list',
-        help='Path to text file containing relative paths for every example.',
-        default='datasets/300W_LP/files.txt', type=str) #BIWI_70_30_train.npz #300W_LP/files.txt
-    parser.add_argument(
-        '--output_string', dest='output_string',
-        help='String appended to output snapshots.', default='', type=str)
-    parser.add_argument(
-        '--snapshot', dest='snapshot', help='Path of model snapshot.',
-        default='', type=str)
-
-    args = parser.parse_args()
-    return args
-
+from src.config import _C
 
 def get_ignored_params(model):
     b = [model.layer0]
@@ -94,27 +56,28 @@ def load_filtered_state_dict(model, snapshot):
 
 if __name__ == '__main__':
 
-    args = parse_args()
+    cfg_file = sys.argv[1]
+    _C.merge_from_file(cfg_file)
     cudnn.enabled = True
-    num_epochs = args.num_epochs
-    batch_size = args.batch_size
-    gpu = args.gpu_id
+    num_epochs = _C.num_epochs
+    batch_size = _C.batch_size
+    gpu = _C.gpu_id
 
     if not os.path.exists('output/snapshots'):
         os.makedirs('output/snapshots')
 
     summary_name = '{}_{}_bs{}'.format(
-        'SixDRepNet', int(time.time()), args.batch_size)
+        'SixDRepNet', int(time.time()), _C.batch_size)
 
     if not os.path.exists('output/snapshots/{}'.format(summary_name)):
         os.makedirs('output/snapshots/{}'.format(summary_name))
 
     model = SixDRepNet(backbone_name='RepVGG-B1g2',
-                        backbone_file='RepVGG-B1g2-train.pth',
+                        backbone_file='model/RepVGG-B1g2-train.pth',
                         deploy=False,
                         pretrained=True)
-    if not args.snapshot == '':
-        saved_state_dict = torch.load(args.snapshot)
+    if not _C.snapshot == '':
+        saved_state_dict = torch.load(_C.snapshot)
         model.load_state_dict(saved_state_dict['model_state_dict'])
 
     print('Loading data.')
@@ -129,7 +92,7 @@ if __name__ == '__main__':
                                           normalize])
 
     pose_dataset = datasets.getDataset(
-        args.dataset, args.data_dir, args.filename_list, transformations)
+        _C.DATA, transformations)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=pose_dataset,
@@ -142,11 +105,11 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam([
         {'params': get_ignored_params(model), 'lr': 0},
-        {'params': get_non_ignored_params(model), 'lr': args.lr},
-        {'params': get_fc_params(model), 'lr': args.lr * 10}
-    ], lr=args.lr)
+        {'params': get_non_ignored_params(model), 'lr': _C.lr},
+        {'params': get_fc_params(model), 'lr': _C.lr * 10}
+    ], lr=_C.lr)
 
-    if not args.snapshot == '':
+    if not _C.snapshot == '':
         optimizer.load_state_dict(saved_state_dict['optimizer_state_dict'])
 
     #milestones = np.arange(num_epochs)
@@ -174,7 +137,7 @@ if __name__ == '__main__':
 
             loss_sum += loss.item()
 
-            if (i+1) % 100 == 0:
+            if (i+1) % 10 == 0:
                 print('Epoch [%d/%d], Iter [%d/%d] Loss: '
                       '%.6f' % (
                           epoch+1,
@@ -194,6 +157,6 @@ if __name__ == '__main__':
                       'epoch': epoch,
                       'model_state_dict': model.state_dict(),
                       'optimizer_state_dict': optimizer.state_dict(),
-                  }, 'output/snapshots/' + summary_name + '/' + args.output_string +
+                  }, 'output/snapshots/' + summary_name + '/' + _C.output_string +
                       '_epoch_' + str(epoch+1) + '.tar')
                   )

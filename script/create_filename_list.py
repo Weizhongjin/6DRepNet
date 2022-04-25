@@ -4,6 +4,7 @@
 import os, sys, argparse
 import numpy as np
 import utils
+from tqdm import tqdm
 
 def parse_args():
     """Parse input arguments."""
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     rej_counter = 0
     outfile = open(args.filename, 'w')
 
-    for root, dirs, files in os.walk('.'): 
+    for root, dirs, files in tqdm(os.walk('.')): 
         for f in files: 
             if f[-4:] == '.jpg': 
                 mat_path = os.path.join(root, f.replace('.jpg', '.mat'))
