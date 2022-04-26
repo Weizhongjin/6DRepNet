@@ -1,5 +1,6 @@
-from server.client_com import ImageServerClient
 import sys
+sys.path.append('../')
+from src.server.client_com import ImageServerClient
 if __name__ == '__main__':
     img_path = sys.argv[1] 
     d = ImageServerClient('http://127.0.0.1:8080/faceAngle')

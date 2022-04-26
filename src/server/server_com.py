@@ -53,7 +53,7 @@ class BaseHandler(tornado.web.RequestHandler):
             req = json.loads(self.request.body)
             image = self.build_image(req)
             self.dlog.debug('alg time[%s:np] : %1.4f' % (str(tornado.process.task_id()), time.time() - start))
-            if image == None:
+            if image is None:
                 return_code = 202
                 res = {"image_name" : req.get("image_name")}
                 self.write(json.dumps(self.build_resp(return_code,res)))
@@ -78,7 +78,7 @@ class BaseHandler(tornado.web.RequestHandler):
     @staticmethod
     def build_resp(code,res,message=None):
         resp = {}
-        resp['result_code'] = 200
+        resp['result_code'] = code
         resp['result_data'] = res
         if code == 200:
             message = 'success'
