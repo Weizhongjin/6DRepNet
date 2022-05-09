@@ -3,7 +3,7 @@ import os
 import numpy as np
 import cv2
 import pandas as pd
-
+import random
 import torch
 from torch.utils.data.dataset import Dataset
 from torchvision import transforms
@@ -36,13 +36,13 @@ def get_list_from_filenames(file_path):
 
     
 class AFLW2000(Dataset):
-    def __init__(self, data_dir, filename_path, transform, img_ext='.jpg', annot_ext='.mat', image_mode='RGB'):
+    def __init__(self, data_dir, filename_path, transform, img_ext='.jpg', annot_ext='.mat', image_mode='RGB',square=False):
         self.data_dir = data_dir
         self.transform = transform
         self.img_ext = img_ext
         self.annot_ext = annot_ext
         filename_list = get_list_from_filenames(filename_path)
-
+        self.square = square
         self.X_train = filename_list
         self.y_train = filename_list
         self.image_mode = image_mode
@@ -67,7 +67,8 @@ class AFLW2000(Dataset):
         x_max += 2 * k * abs(x_max - x_min)
         y_max += 0.6 * k * abs(y_max - y_min)
         img = img.crop((int(x_min), int(y_min), int(x_max), int(y_max)))
-
+        if self.square:
+            img = expand2square(img)
         # We get the pose in radians
         pose = utils.get_ypr_from_mat(mat_path)
         # And convert to degrees.
@@ -243,12 +244,14 @@ class BIWI(Dataset):
 
 class Pose_300W_LP(Dataset):
     # Head pose from 300W-LP dataset
-    def __init__(self, data_dir, filename_path, transform, img_ext='.jpg', annot_ext='.mat', image_mode='RGB'):
+    def __init__(self, data_dir, filename_path, transform, ratio=0.1,img_ext='.jpg', annot_ext='.mat', image_mode='RGB',square=False):
         self.data_dir = data_dir
         self.transform = transform
         self.img_ext = img_ext
         self.annot_ext = annot_ext
         filename_list = get_list_from_filenames(filename_path)
+        filename_list = random.sample(filename_list,int(len(filename_list)*ratio))
+        self.square = square
 
         self.X_train = filename_list
         self.y_train = filename_list
@@ -276,7 +279,8 @@ class Pose_300W_LP(Dataset):
         x_max += 0.6 * k * abs(x_max - x_min)
         y_max += 0.6 * k * abs(y_max - y_min)
         img = img.crop((int(x_min), int(y_min), int(x_max), int(y_max)))
-        img = expand2square(img)
+        if self.square:
+            img = expand2square(img)
         # We get the pose in radians
         pose = utils.get_ypr_from_mat(mat_path)
         # And convert to degrees.
@@ -319,8 +323,9 @@ class Pose_300W_LP(Dataset):
         return self.length
 
 class easyPoseDataset(Dataset):
-    def __init__(self,data_dir,filename_csv,transform=None):
+    def __init__(self,data_dir,filename_csv,transform=None,square = False):
         self.df = pd.read_csv(filename_csv)
+        self.square = square
         self.root_dir = data_dir
         if not transform:
             self.transform = transform
@@ -336,6 +341,9 @@ class easyPoseDataset(Dataset):
         img_path = os.path.join(self.root_dir,row_data['path'].item())
         img = Image.open(img_path)
         img = img.convert('RGB')
+        yaw = row_data['y'].item()
+        pitch = row_data['p'].item()
+        roll = row_data['r'].item()
         yaw = yaw*np.pi/180
         pitch = pitch*np.pi/180
         roll = roll*np.pi/180
@@ -352,7 +360,8 @@ class easyPoseDataset(Dataset):
         y2 += 1 * k * abs(y2 - y1)
 
         img = img.crop((int(x1), int(y1), int(x2), int(y2)))
-        img = expand2square(img)
+        if self.square:
+            img = expand2square(img)
 
         # Bin values
         R = utils.get_R(pitch, yaw, roll)
@@ -369,6 +378,7 @@ def getDataset(data_cfg, transformations, train_mode = True):
     filename_lists = data_cfg.filename_list
     data_set_list = []
     for dataset,data_dir,filename_list in zip(datasets,data_dirs,filename_lists):
+        print('build dataset : {}'.format(dataset))
         if dataset == 'Pose_300W_LP':
                 pose_dataset = Pose_300W_LP(
                     data_dir, filename_list, transformations)
@@ -389,7 +399,7 @@ def getDataset(data_cfg, transformations, train_mode = True):
         else:
             raise NameError('Error: not a valid dataset name')
         data_set_list.append(pose_dataset)
-    if len(data_set_list) != 1:
+    if len(data_set_list) == 1:
         return data_set_list[0]
     else:
         return ConcatDataset(data_set_list)

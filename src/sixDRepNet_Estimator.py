@@ -6,6 +6,7 @@ from .model import SixDRepNet
 import numpy as np
 import torchvision
 from .FaceBoxes import FaceBoxes
+from .FaceDetection import FaceDetection
 import torchvision
 import torch.backends.cudnn as cudnn
 from torchvision import transforms
@@ -23,7 +24,7 @@ class PoseEstimator:
                    backbone_file='',
                    deploy=True,
                    pretrained=False)
-        snapshot_path = 'model/6DRepNet_300W_LP_BIWI.pth'
+        snapshot_path = 'model/4data_withval_epoch_54.pth'
         saved_state_dict = torch.load(os.path.join(snapshot_path), map_location='cpu')
         if 'model_state_dict' in saved_state_dict:
             self.model.load_state_dict(saved_state_dict['model_state_dict'])
@@ -41,6 +42,8 @@ class PoseEstimator:
         self.dlog.debug('Use GPU: {}'.format(self.gpu))
         self.model.eval()
         self.cnn_face_detector = FaceBoxes()
+        face_model = 'model/face_det/Resnet152_epoch_145.pth'
+        self.cnn_face_detector = FaceDetection(face_model)
         # self.cnn_face_detector = RetinaFace(gpu_id=gpu_id)
         self.dlog.debug('Face Detection Model Load Success')
         self.transformations = transforms.Compose([transforms.Resize(224),
@@ -75,16 +78,15 @@ class PoseEstimator:
         # img_scale = self._preprocess(img)
         img_scale = img
         img_rgb = cv2.cvtColor(img_scale,cv2.COLOR_BGR2RGB)
-        dets = self.cnn_face_detector(img_scale)
-        print(dets)
+        dets = self.cnn_face_detector.dect_face(img_scale)
         # for idx, (det,landmark,score) in enumerate(dets):
         for idx, det in enumerate(dets):
             temp_res = {}
             # Get x_min, y_min, x_max, y_max, conf
-            x_min = det[0]
-            y_min = det[1]
-            x_max = det[2]
-            y_max = det[3]
+            x_min = det['XMin']
+            y_min = det['YMin']
+            x_max = det['XMax']
+            y_max = det['YMax']
             # conf = det.confidence
             # temp_res['bbox'] = det.tolist()
             temp_res["location"] ={

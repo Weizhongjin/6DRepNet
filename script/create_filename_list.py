@@ -2,8 +2,9 @@
 # https://github.com/shahroudy
 
 import os, sys, argparse
+sys.path.append('../')
 import numpy as np
-import utils
+import src.utils as utils
 from tqdm import tqdm
 
 def parse_args():

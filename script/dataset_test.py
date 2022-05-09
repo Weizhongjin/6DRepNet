@@ -1,11 +1,12 @@
 import sys
-import datasets
 import torch
 import torchvision
+import yacs
 from torchvision import transforms
 from torch.utils.data import ConcatDataset,dataloader
-from config import _C
-from datasets import getDataset
+sys.path.append('../')
+from src.config import _C
+from src.datasets import getDataset
 if __name__ == '__main__':
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
@@ -15,9 +16,15 @@ if __name__ == '__main__':
                                           transforms.RandomCrop(224),
                                           transforms.ToTensor(),
                                           normalize])
-    _C.merge_from_file('config/concat.yaml')
+    _C.merge_from_file('../config/data_test.yaml')
     print(_C)
     dataset = getDataset(_C.DATA,transformations)
-    for data in dataset:
-        print(data)
+    print(len(dataset))
+    train_loader = torch.utils.data.DataLoader(
+        dataset=dataset,
+        batch_size=_C.batch_size,
+        shuffle=True,
+        num_workers=4)
+    for data in train_loader:
+        print(data[-1])
         break

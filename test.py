@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import src.datasets_ori as datasets
 import src.utils as utils
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 
 
 def parse_args():

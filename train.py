@@ -16,6 +16,7 @@ from src.loss import GeodesicLoss
 import torch.utils.model_zoo as model_zoo
 import torchvision
 from src.config import _C
+from src.server.dlogger import dlogger
 
 def get_ignored_params(model):
     b = [model.layer0]
@@ -62,7 +63,8 @@ if __name__ == '__main__':
     num_epochs = _C.num_epochs
     batch_size = _C.batch_size
     gpu = _C.gpu_id
-
+    mlog = dlogger(app_name='train')
+    mlog.info(_C.__str__)
     if not os.path.exists('output/snapshots'):
         os.makedirs('output/snapshots')
 
@@ -80,22 +82,36 @@ if __name__ == '__main__':
         saved_state_dict = torch.load(_C.snapshot)
         model.load_state_dict(saved_state_dict['model_state_dict'])
 
-    print('Loading data.')
+    mlog.info('Loading data.')
 
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225])
 
-    transformations = transforms.Compose([transforms.Resize(240),
+    train_transformations = transforms.Compose([transforms.Resize(240),
                                           transforms.RandomCrop(224),
                                           transforms.ToTensor(),
                                           normalize])
 
-    pose_dataset = datasets.getDataset(
-        _C.DATA, transformations)
+    val_transformations = transforms.Compose([transforms.Resize(256),
+                                          transforms.CenterCrop(224),
+                                          transforms.ToTensor(),
+                                          normalize])
+
+    train_pose_dataset = datasets.getDataset(
+        _C.TRAIN_DATA, train_transformations)
+
+    val_pose_dataset = datasets.getDataset(
+        _C.VAL_DATA, val_transformations)
 
     train_loader = torch.utils.data.DataLoader(
-        dataset=pose_dataset,
+        dataset=train_pose_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4)
+
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_pose_dataset,
         batch_size=batch_size,
         shuffle=True,
         num_workers=4)
@@ -117,10 +133,11 @@ if __name__ == '__main__':
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=milestones, gamma=0.5)
 
-    print('Starting training.')
+    mlog.info('Starting training.')
     for epoch in range(num_epochs):
         loss_sum = .0
         iter = 0
+        model.train()
         for i, (images, gt_mat, _, _) in enumerate(train_loader):
             iter += 1
             images = torch.Tensor(images).cuda(gpu)
@@ -138,15 +155,29 @@ if __name__ == '__main__':
             loss_sum += loss.item()
 
             if (i+1) % 10 == 0:
-                print('Epoch [%d/%d], Iter [%d/%d] Loss: '
+                mlog.info('Epoch [%d/%d], Iter [%d/%d] Loss: '
                       '%.6f' % (
                           epoch+1,
                           num_epochs,
                           i+1,
-                          len(pose_dataset)//batch_size,
+                          len(train_pose_dataset)//batch_size,
                           loss.item(),
                       )
                       )
+        mlog.info('No.{} Epoch Training Finished'.format(epoch))
+        model.eval()
+        val_loss_sum = 0
+        mlog.info('Start validation ...')
+        for i, (images, gt_mat, _, _) in enumerate(val_loader):
+            images = torch.Tensor(images).cuda(gpu)
+
+            # Forward pass
+            pred_mat = model(images)
+
+            # Calc loss
+            loss = crit(gt_mat.cuda(gpu), pred_mat)
+            val_loss_sum += loss.item()
+        mlog.info('No.{} Epoch Validation Result: Total Loss : {}'.format(epoch,val_loss_sum))
 
         scheduler.step()
 

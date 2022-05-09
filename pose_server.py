@@ -19,10 +19,13 @@ class PoseHandler(BaseHandler):
         }
         if len(result) == 0:
             code = 201
+            message = 'no face detect'
+            # final_res = {"image_name" : image_name}
+            final_res = {}
         else:
             code = 200
-        self.dlog.debug(final_res)
-        return code, final_res
+            message = 'success'
+        return code, message, final_res
 if __name__ == '__main__':
     app_name = getattr(PoseHandler, '__name__')
     pose_estimator = PoseEstimator(app_name=app_name)

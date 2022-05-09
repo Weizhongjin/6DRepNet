@@ -44,34 +44,39 @@ class BaseHandler(tornado.web.RequestHandler):
         npimage = np.fromstring(b64, np.uint8)
         img_restore = cv2.imdecode(npimage, cv2.IMREAD_COLOR)
         return img_restore
-
+    def write_output(self,out):
+        self.dlog.debug(out)
+        self.write(out)
     @gen.coroutine
     def post(self):
         self.set_header("Content-Type", "application/json")
-        try:
-            start = time.time()
-            req = json.loads(self.request.body)
-            image = self.build_image(req)
-            self.dlog.debug('alg time[%s:np] : %1.4f' % (str(tornado.process.task_id()), time.time() - start))
-            if image is None:
-                return_code = 202
-                res = {"image_name" : req.get("image_name")}
-                self.write(json.dumps(self.build_resp(return_code,res)))
-            if self.alg_timeout:
-                return_code, res = func_timeout(self.alg_timeout, self.algorithm, args=(req, image))
-            else:
-                return_code, res = self.algorithm(req, image)
-            self.write(json.dumps(self.build_resp(return_code, res), ensure_ascii=False))
+        start = time.time()
+        req = json.loads(self.request.body)
+        image = self.build_image(req)
+        self.dlog.debug('alg time[%s:np] : %1.4f' % (str(tornado.process.task_id()), time.time() - start))
+        if image is None:
+            return_code = 202
+            res = {"image_name" : req.get("image_name")}
+            output = json.dumps(self.build_resp(return_code,res,message='image_data loading failed'))
+            self.write_output(output)
+        else:
+            try:
+                if self.alg_timeout:
+                    return_code, msg, res = func_timeout(self.alg_timeout, self.algorithm, args=(req, image))
+                else:
+                    return_code, msg, res = self.algorithm(req, image)
+                self.write_output(json.dumps(self.build_resp(return_code, res,message=msg), ensure_ascii=False))
             
-        except FunctionTimedOut:
+            except FunctionTimedOut:
+                    return_code = 203
+                    res = {"image_name" : req.get("image_name")}
+                    self.dlog.debug('TimeOut Error')
+                    self.write_output(json.dumps(self.build_resp(return_code,res,message='Algorithm Timeout')))
+            except Exception as e:
                 return_code = 203
                 res = {"image_name" : req.get("image_name")}
-                self.write(json.dumps(self.build_resp(return_code,res,message='Algorithm Timeout')))
-        except Exception as e:
-            return_code = 203
-            res = {"image_name" : req.get("image_name")}
-            self.dlog.debug(' error: ' + str(e))
-            self.write(json.dumps(self.build_resp(return_code,res,message=str(e))))
+                self.dlog.debug(' error: ' + str(e))
+                self.write_output(json.dumps(self.build_resp(return_code,res,message=str(e))))
         
         self.dlog.debug('alg time[%s:cv] : %1.4f' % (str(tornado.process.task_id()), time.time() - start))
 
@@ -106,12 +111,16 @@ class BaseHandler(tornado.web.RequestHandler):
     def build_image(req):
         try:
             image_b64 = req.get("image_data")
+            if image_b64 == None:
+                return None
+            if not isinstance(image_b64,str):
+                return None
             image = base64.b64decode(image_b64)
             npimage = BaseHandler.decode_image(image)
+            return npimage
         except:
             return None # img recog failed
 
-        return npimage
 
 def deploy(port, handler, num_processes=1, alg_timeout=None,args=None):
 
@@ -140,4 +149,3 @@ def deploy(port, handler, num_processes=1, alg_timeout=None,args=None):
     http_server.add_sockets(sockets)
     print("webapp:{} start listening port {} use_bs64 {}".format(app_name, port, str(use_bs64)))
     tornado.ioloop.IOLoop.instance().start()
-

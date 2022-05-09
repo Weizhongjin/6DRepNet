@@ -1,0 +1,15 @@
+batch_size : 8
+snapshot : ''
+DATA:
+  type : 
+    - 'Pose_300W_LP'
+    # - 'AFLW2000'
+    - 'easy'
+  data_dir :
+    - '/Users/weizhongjin/jwzZoom/data/pose/300W_LP'
+    # - '/Users/weizhongjin/jwzZoom/data/pose/AFLW2000'
+    - '/Users/weizhongjin/jwzZoom/data/pose/20220427'
+  filename_list:
+    - '/Users/weizhongjin/jwzZoom/data/pose/300W_LP/files.txt'
+    # - '/Users/weizhongjin/jwzZoom/data/pose/AFLW2000.txt'
+    - '/Users/weizhongjin/jwzZoom/data/pose/20220427/pose_0427_bbox.csv'

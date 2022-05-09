@@ -3,3 +3,4 @@ logs/
 FaceBoxes/
 __pycache__
 *.pth
+temp/
