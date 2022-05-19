@@ -305,8 +305,8 @@ class Pose_300W_LP(Dataset):
 
 def getDataset(dataset, data_dir, filename_list, transformations, train_mode = True):
     if dataset == 'Pose_300W_LP':
-            pose_dataset = Pose_300W_LP(
-                data_dir, filename_list, transformations)
+        pose_dataset = Pose_300W_LP(
+            data_dir, filename_list, transformations)
     elif dataset == 'AFLW2000':
         pose_dataset = AFLW2000(
             data_dir, filename_list, transformations)

@@ -1,12 +1,11 @@
 import sys, os, argparse
-from face_detection import RetinaFace
+# from face_detection import RetinaFace
 import torch 
 import cv2
 from .model import SixDRepNet
 import numpy as np
 import torchvision
-from .FaceBoxes import FaceBoxes
-from .FaceDetection import FaceDetection
+# from .FaceBoxes import FaceBoxes
 import torchvision
 import torch.backends.cudnn as cudnn
 from torchvision import transforms
@@ -15,22 +14,26 @@ import torch.nn.functional as F
 from PIL import Image
 from .utils import compute_euler_angles_from_rotation_matrices
 from .server import dlogger
+from .datasets import expand2square
+from .FaceDetection import FaceDetection
 
 class PoseEstimator:
-    def __init__(self,args=None,app_name=None):
+    def __init__(self,model_pth,args=None,app_name=None,square=False):
         self.dlog = dlogger(app_name)
         cudnn.enabled = True
         self.model = SixDRepNet(backbone_name='RepVGG-B1g2',
                    backbone_file='',
                    deploy=True,
                    pretrained=False)
-        snapshot_path = 'model/4data_withval_epoch_54.pth'
+        snapshot_path = model_pth
+        self.square = square
         saved_state_dict = torch.load(os.path.join(snapshot_path), map_location='cpu')
         if 'model_state_dict' in saved_state_dict:
             self.model.load_state_dict(saved_state_dict['model_state_dict'])
         else:
             self.model.load_state_dict(saved_state_dict)
 
+        self.dlog.debug('load model:{}'.format(model_pth))
         self.dlog.debug('Pose Model Load Success')
         self.gpu = torch.has_cuda
         if self.gpu:
@@ -41,10 +44,10 @@ class PoseEstimator:
             gpu_id = -1
         self.dlog.debug('Use GPU: {}'.format(self.gpu))
         self.model.eval()
-        self.cnn_face_detector = FaceBoxes()
+        # self.cnn_face_detector = FaceBoxes()
+        # self.cnn_face_detector = RetinaFace(gpu_id=gpu_id)
         face_model = 'model/face_det/Resnet152_epoch_145.pth'
         self.cnn_face_detector = FaceDetection(face_model)
-        # self.cnn_face_detector = RetinaFace(gpu_id=gpu_id)
         self.dlog.debug('Face Detection Model Load Success')
         self.transformations = transforms.Compose([transforms.Resize(224),
                                       transforms.CenterCrop(224),
@@ -83,10 +86,15 @@ class PoseEstimator:
         for idx, det in enumerate(dets):
             temp_res = {}
             # Get x_min, y_min, x_max, y_max, conf
+            # x_min = det[0]
+            # y_min = det[1]
+            # x_max = det[2]
+            # y_max = det[3]
             x_min = det['XMin']
-            y_min = det['YMin']
             x_max = det['XMax']
+            y_min = det['YMin']
             y_max = det['YMax']
+            conf = det['score']
             # conf = det.confidence
             # temp_res['bbox'] = det.tolist()
             temp_res["location"] ={
@@ -111,6 +119,8 @@ class PoseEstimator:
             # Crop image
             img_crop = img_rgb[y_min:y_max,x_min:x_max]
             img_crop = Image.fromarray(img_crop)
+            if self.square:
+                img_crop = expand2square(img_crop)
 
             # Transform
             img_tensor = self.transformations(img_crop)

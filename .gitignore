@@ -1,6 +1,7 @@
 output/
-logs/
+logs
 FaceBoxes/
+model/
 __pycache__
 *.pth
 temp/

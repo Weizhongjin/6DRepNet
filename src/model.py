@@ -9,9 +9,11 @@ class SixDRepNet(nn.Module):
                  backbone_name, backbone_file, deploy,
                  bins=(1, 2, 3, 6),
                  droBatchNorm=nn.BatchNorm2d,
-                 pretrained=True):
+                 pretrained=True,
+                 gpu_id = 0):
         super(SixDRepNet, self).__init__()
         self.gpu = torch.has_cuda
+        self.gpu_id = gpu_id
         repvgg_fn = get_RepVGG_func_by_name(backbone_name)
         backbone = repvgg_fn(deploy)
         if pretrained:
@@ -44,7 +46,7 @@ class SixDRepNet(nn.Module):
         x= self.gap(x)
         x = torch.flatten(x, 1)
         x = self.linear_reg(x)
-        return compute_rotation_matrix_from_ortho6d(x,self.gpu)
+        return compute_rotation_matrix_from_ortho6d(x,self.gpu,self.gpu_id)
 
 
 

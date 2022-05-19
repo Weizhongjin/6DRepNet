@@ -1,0 +1,37 @@
+batch_size : 128
+snapshot : ''
+gpu_id : 0
+lr : 0.00001
+num_epochs : 80
+output_string : '5data_ori'
+TRAIN_DATA:
+  lp_ratio: 1.0
+  type : 
+    - 'Pose_300W_LP'
+    - 'easy'
+    - 'easy'
+    - 'easy'
+    - 'easy'
+  data_dir :
+    - '/workspace/data/300W_LP'
+    - '/workspace/data/20220427'
+    - '/workspace/data/20220429'
+    - '/workspace/data/20220504'
+    - '/workspace/data/20220507'
+  filename_list:
+    - '/workspace/data/300W_LP/files_train.txt'
+    - '/workspace/data/20220427/pose_0427_bbox.csv'
+    - '/workspace/data/20220429/pose_0429_bbox.csv'
+    - '/workspace/data/20220504/pose_0504_bbox.csv'
+    - '/workspace/data/20220507/pose_0507_box.csv'
+VAL_DATA:
+  type : 
+    - 'Pose_300W_LP'
+    - 'easy'
+  data_dir :
+    - '/workspace/data/300W_LP'
+    - '/workspace/data/20220415'
+  filename_list:
+    - '/workspace/data/300W_LP/files_val.txt'
+    - '/workspace/data/20220415/pose_0415_bbox.csv'
+ 

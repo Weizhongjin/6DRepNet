@@ -60,6 +60,7 @@ class FaceDetection():
                 requests["YMin"] = float(faces[i][1])
                 requests["XMax"] = float(faces[i][2])
                 requests["YMax"] = float(faces[i][3])
+                requests["score"] = float(faces[i][4])
                 # requests["landMarks"] = landmarks[i].tolist()
 
                 DetResult_list.append(requests)

@@ -1,0 +1,42 @@
+batch_size : 128
+snapshot : 'model/jwz_300w_ori.tar'
+gpu_id : 1
+lr : 0.00001
+num_epochs : 60
+output_string : '4data_withval_olddet'
+TRAIN_DATA:
+  lp_ratio: 0.4
+  type : 
+    - 'Pose_300W_LP'
+    - 'easy'
+    - 'easy'
+    - 'easy'
+    - 'easy'
+  data_dir :
+    - '/workspace/data/300W_LP'
+    - '/workspace/data/20220427'
+    - '/workspace/data/20220429'
+    - '/workspace/data/20220504'
+    - '/workspace/data/20220510'
+
+  filename_list:
+    - '/workspace/data/300W_LP/files_train.txt'
+    - '/workspace/data/20220427/pose_0427_bbox_new.csv'
+    - '/workspace/data/20220429/pose_0429_bbox_new.csv'
+    - '/workspace/data/20220504/pose_0504_bbox_new.csv'
+    - '/workspace/data/20220510/pose_0510_bbox_new.csv'
+VAL_DATA:
+  lp_ratio: 0.05
+  type : 
+    - 'Pose_300W_LP'
+    - 'easy'
+    - 'easy'
+  data_dir :
+    - '/workspace/data/300W_LP'
+    - '/workspace/data/20220415'
+    - '/workspace/data/20220507'
+  filename_list:
+    - '/workspace/data/300W_LP/files_val.txt'
+    - '/workspace/data/20220415/pose_0415_bbox_new.csv'
+    - '/workspace/data/20220507/pose_0507_bbox_new.csv'
+ 

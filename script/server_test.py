@@ -28,4 +28,5 @@ if __name__ == '__main__':
     idict['image_name'] = img_path
     req = d.send(idict)
     res = req['result_data']['face_info']
+    print(res)
     draw_from_res(res,image)

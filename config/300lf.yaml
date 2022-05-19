@@ -1,0 +1,11 @@
+batch_size : 128
+snapshot : ''
+gpu_id : 1
+output_string : 'nopad_only300'
+DATA:
+  type : 
+    - 'Pose_300W_LP'
+  data_dir :
+    - '/workspace/data/300W_LP'
+  filename_list:
+    - '/workspace/data/300W_LP/files.txt'

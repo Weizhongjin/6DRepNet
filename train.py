@@ -77,7 +77,8 @@ if __name__ == '__main__':
     model = SixDRepNet(backbone_name='RepVGG-B1g2',
                         backbone_file='model/RepVGG-B1g2-train.pth',
                         deploy=False,
-                        pretrained=True)
+                        pretrained=True,
+                        gpu_id = gpu)
     if not _C.snapshot == '':
         saved_state_dict = torch.load(_C.snapshot)
         model.load_state_dict(saved_state_dict['model_state_dict'])
@@ -129,7 +130,7 @@ if __name__ == '__main__':
         optimizer.load_state_dict(saved_state_dict['optimizer_state_dict'])
 
     #milestones = np.arange(num_epochs)
-    milestones = [10, 20]
+    milestones = [i*10 for i in range(int(num_epochs/10))]
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=milestones, gamma=0.5)
 
